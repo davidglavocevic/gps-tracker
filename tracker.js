@@ -76,7 +76,7 @@ id = "device-"+Math.random().toString(36).substr(2,5)
 localStorage.setItem("device_id",id)
 }
 
-document.getElementById("device").innerText = "ID: "+id
+document.getElementById("device").innerText = "ID: " + id
 
 const map = L.map('map').setView([50.0,8.2],10)
 
@@ -111,36 +111,42 @@ markers[d].setLatLng([dev.lat,dev.lon])
 function sendLocation(){
 
 if(!navigator.geolocation){
-alert("GPS nicht unterstützt")
+alert("GPS wird von diesem Browser nicht unterstützt")
 return
 }
 
-navigator.geolocation.getCurrentPosition((pos)=>{
+navigator.geolocation.getCurrentPosition(
+
+function(pos){
 
 const lat = pos.coords.latitude
 const lon = pos.coords.longitude
 
 fetch("/location",{
-
 method:"POST",
-
 headers:{
 "Content-Type":"application/json"
 },
-
 body:JSON.stringify({
 id,
 lat,
 lon
 })
-
 })
 
-},{
-enableHighAccuracy:false,
+},
+
+function(error){
+alert("Standort Fehler: " + error.message)
+},
+
+{
+enableHighAccuracy:true,
 maximumAge:30000,
 timeout:5000
-})
+}
+
+)
 
 }
 
