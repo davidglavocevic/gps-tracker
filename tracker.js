@@ -52,8 +52,14 @@ padding:6px;
 margin-bottom:6px;
 }
 
-button{
-margin-top:4px;
+.online{
+color:green;
+font-weight:bold;
+}
+
+.offline{
+color:red;
+font-weight:bold;
 }
 
 </style>
@@ -90,23 +96,22 @@ const socket = io()
 let id = localStorage.getItem("device_id")
 
 if(!id){
-id = "device-"+Math.random().toString(36).substr(2,5)
+id = "device-"+Math.random().toString(36).substr(2,9)
 localStorage.setItem("device_id",id)
 }
 
 let name = localStorage.getItem("device_name") || "Unbekannt"
 
 document.getElementById("device").innerText =
-"Gerät: " + name
+"Gerät: "+name
 
 function saveName(){
 
-name = document.getElementById("nameInput").value
-
+name=document.getElementById("nameInput").value
 localStorage.setItem("device_name",name)
 
-document.getElementById("device").innerText =
-"Gerät: " + name
+document.getElementById("device").innerText=
+"Gerät: "+name
 
 }
 
@@ -118,33 +123,47 @@ L.tileLayer(
 
 let markers = {}
 
-function formatTime(timestamp){
+function formatTime(t){
 
-const date = new Date(timestamp)
+const d=new Date(t)
+return d.toLocaleTimeString()
 
-return date.toLocaleTimeString()
+}
+
+function getStatus(time){
+
+const now=Date.now()
+
+if(now-time>600000){
+return "offline"
+}
+
+return "online"
 
 }
 
 function updateDeviceList(devices){
 
-const list = document.getElementById("deviceList")
+const list=document.getElementById("deviceList")
 
 list.innerHTML=""
 
 for(const d in devices){
 
-const dev = devices[d]
+const dev=devices[d]
 
-const div = document.createElement("div")
+const status=getStatus(dev.time)
+
+const div=document.createElement("div")
 
 div.className="device"
 
-div.innerHTML =
+div.innerHTML=
 "<b>"+dev.name+"</b><br>"+
 dev.speed.toFixed(1)+" km/h<br>"+
 "Zuletzt: "+formatTime(dev.time)+"<br>"+
-'<button onclick="removeDevice(\\''+d+'\\')">❌ Entfernen</button>'
+"Status: <span class='"+status+"'>"+status+"</span><br>"+
+'<button onclick="removeDevice("'+d+'")">❌ Entfernen</button>'
 
 list.appendChild(div)
 
@@ -174,16 +193,19 @@ updateDeviceList(devices)
 
 for(const d in devices){
 
-const dev = devices[d]
+const dev=devices[d]
 
-const popup =
+const status=getStatus(dev.time)
+
+const popup=
 "<b>"+dev.name+"</b><br>"+
 dev.speed.toFixed(1)+" km/h<br>"+
-"Zuletzt: "+formatTime(dev.time)
+"Zuletzt: "+formatTime(dev.time)+"<br>"+
+"Status: "+status
 
 if(!markers[d]){
 
-markers[d] = L.marker([dev.lat,dev.lon])
+markers[d]=L.marker([dev.lat,dev.lon])
 .addTo(map)
 .bindPopup(popup)
 
@@ -200,38 +222,16 @@ markers[d].setPopupContent(popup)
 
 function updateTime(){
 
-const now = new Date()
+const now=new Date()
 
-document.getElementById("lastUpdate").innerText =
-"Aktualisiert um: " + now.toLocaleTimeString()
+document.getElementById("lastUpdate").innerText=
+"Aktualisiert um: "+now.toLocaleTimeString()
 
 }
 
 function manualUpdate(){
 
 getLocation()
-
-}
-
-let lastLat=null
-let lastLon=null
-
-function distance(lat1,lon1,lat2,lon2){
-
-const R=6371000
-
-const dLat=(lat2-lat1)*Math.PI/180
-const dLon=(lon2-lon1)*Math.PI/180
-
-const a=
-Math.sin(dLat/2)*Math.sin(dLat/2)+
-Math.cos(lat1*Math.PI/180)*
-Math.cos(lat2*Math.PI/180)*
-Math.sin(dLon/2)*Math.sin(dLon/2)
-
-const c=2*Math.atan2(Math.sqrt(a),Math.sqrt(1-a))
-
-return R*c
 
 }
 
@@ -243,19 +243,6 @@ function(pos){
 
 const lat=pos.coords.latitude
 const lon=pos.coords.longitude
-
-if(lastLat!==null){
-
-const dist=distance(lastLat,lastLon,lat,lon)
-
-if(dist<10){
-return
-}
-
-}
-
-lastLat=lat
-lastLon=lon
 
 let speed=pos.coords.speed
 
@@ -306,9 +293,7 @@ updateTime()
 },
 
 function(error){
-
 console.log(error)
-
 },
 
 {
@@ -327,8 +312,8 @@ function(){
 getLocation()
 },
 
-function(error){
-console.log(error)
+function(e){
+console.log(e)
 },
 
 {
