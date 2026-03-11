@@ -10,7 +10,7 @@ app.use(express.json())
 
 let devices = {}
 
-app.get("/",(req,res)=>{
+app.get("/", (req, res) => {
 
 res.send(`
 
@@ -151,7 +151,6 @@ sendLocation()
 </script>
 
 </body>
-
 </html>
 
 `)
@@ -178,6 +177,8 @@ io.on("connection",(socket)=>{
 socket.emit("update",devices)
 })
 
-server.listen(3000,()=>{
-console.log("Server läuft auf http://localhost:3000")
+const PORT = process.env.PORT || 3000
+
+server.listen(PORT,()=>{
+console.log("Server läuft auf Port " + PORT)
 })
