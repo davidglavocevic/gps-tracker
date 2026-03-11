@@ -10,7 +10,7 @@ app.use(express.json())
 
 let devices = {}
 
-app.get("/", (req, res) => {
+app.get("/", (req,res)=>{
 
 res.send(`
 
@@ -31,20 +31,23 @@ href="https://unpkg.com/leaflet/dist/leaflet.css"/>
 body{
 margin:0;
 font-family:sans-serif;
-}
-
-#map{
-height:80vh;
+display:flex;
 }
 
 #panel{
-padding:10px;
+width:300px;
 background:#f2f2f2;
+padding:10px;
+overflow:auto;
+}
+
+#map{
+flex:1;
+height:100vh;
 }
 
 button{
-padding:10px;
-font-size:16px;
+margin-top:5px;
 }
 
 </style>
@@ -55,11 +58,19 @@ font-size:16px;
 
 <div id="panel">
 
-<button onclick="sendLocation()">
-📍 Standort senden
-</button>
+<h2>GPS Tracker</h2>
 
-<span id="device"></span>
+<input id="nameInput" placeholder="Gerätename"/>
+<button onclick="saveName()">Name speichern</button>
+
+<button onclick="sendLocation()">📍 Standort senden</button>
+
+<div id="device"></div>
+<div id="speed"></div>
+<div id="address"></div>
+
+<h3>Geräte</h3>
+<div id="deviceList"></div>
 
 </div>
 
@@ -76,7 +87,21 @@ id = "device-"+Math.random().toString(36).substr(2,5)
 localStorage.setItem("device_id",id)
 }
 
-document.getElementById("device").innerText = "ID: " + id
+let name = localStorage.getItem("device_name") || "Unbekannt"
+
+document.getElementById("device").innerText =
+"Gerät: " + name
+
+function saveName(){
+
+name = document.getElementById("nameInput").value
+
+localStorage.setItem("device_name",name)
+
+document.getElementById("device").innerText =
+"Gerät: " + name
+
+}
 
 const map = L.map('map').setView([50.0,8.2],10)
 
@@ -86,7 +111,40 @@ L.tileLayer(
 
 let markers = {}
 
+function updateDeviceList(devices){
+
+const list = document.getElementById("deviceList")
+
+list.innerHTML=""
+
+for(const d in devices){
+
+const div = document.createElement("div")
+
+div.innerHTML =
+d + ' <button onclick="removeDevice(\\''+d+'\\')">❌</button>'
+
+list.appendChild(div)
+
+}
+
+}
+
+function removeDevice(id){
+
+if(markers[id]){
+
+map.removeLayer(markers[id])
+
+delete markers[id]
+
+}
+
+}
+
 socket.on("update",(devices)=>{
+
+updateDeviceList(devices)
 
 for(const d in devices){
 
@@ -111,7 +169,7 @@ markers[d].setLatLng([dev.lat,dev.lon])
 function sendLocation(){
 
 if(!navigator.geolocation){
-alert("GPS wird von diesem Browser nicht unterstützt")
+alert("GPS nicht unterstützt")
 return
 }
 
@@ -122,22 +180,56 @@ function(pos){
 const lat = pos.coords.latitude
 const lon = pos.coords.longitude
 
+let speed = pos.coords.speed
+
+if(speed===null){
+speed=0
+}
+
+speed = speed * 3.6
+
+document.getElementById("speed").innerText =
+"Geschwindigkeit: " + speed.toFixed(1) + " km/h"
+
+fetch(
+"https://nominatim.openstreetmap.org/reverse?format=json&lat="+lat+"&lon="+lon
+)
+.then(res=>res.json())
+.then(data=>{
+
+if(data.display_name){
+
+document.getElementById("address").innerText =
+"Adresse: " + data.display_name
+
+}
+
+})
+
 fetch("/location",{
+
 method:"POST",
+
 headers:{
 "Content-Type":"application/json"
 },
+
 body:JSON.stringify({
 id,
 lat,
-lon
+lon,
+name,
+speed
 })
+
 })
 
 },
 
 function(error){
-alert("Standort Fehler: " + error.message)
+
+alert("Standort Fehler: "+error.message)
+
 },
 
 {
@@ -165,11 +257,13 @@ sendLocation()
 
 app.post("/location",(req,res)=>{
 
-const {id,lat,lon} = req.body
+const {id,lat,lon,name,speed} = req.body
 
 devices[id] = {
 lat,
 lon,
+name,
+speed,
 time:Date.now()
 }
 
@@ -186,5 +280,5 @@ socket.emit("update",devices)
 const PORT = process.env.PORT || 3000
 
 server.listen(PORT,()=>{
-console.log("Server läuft auf Port " + PORT)
+console.log("Server läuft auf Port "+PORT)
 })
