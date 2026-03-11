@@ -8,8 +8,8 @@ const io = new Server(server)
 
 app.use(express.json())
 
-const PASSWORD = "2486" // Passwort hier ändern
-const SESSION_TIME = 30 * 60 * 1000 // 30 Minuten
+const PASSWORD = "2486"
+const SESSION_TIME = 30 * 60 * 1000
 
 let devices = {}
 
@@ -71,10 +71,16 @@ height:100vh;
 background:white;
 padding:8px;
 margin-bottom:8px;
+border-radius:5px;
 }
 
 .online{color:green;font-weight:bold}
 .offline{color:red;font-weight:bold}
+
+button{
+margin-top:4px;
+cursor:pointer;
+}
 
 </style>
 
@@ -86,7 +92,12 @@ margin-bottom:8px;
 
 <h2>Login</h2>
 
-<input id="passwordInput" type="password" placeholder="Passwort"/>
+<input id="passwordInput"
+type="password"
+name="password"
+autocomplete="current-password"
+placeholder="Passwort"/>
+
 <button onclick="login()">Login</button>
 
 <div id="loginError" style="color:red"></div>
@@ -104,6 +115,8 @@ margin-bottom:8px;
 
 <button onclick="manualUpdate()">🔄 Jetzt aktualisieren</button>
 
+<button onclick="logout()">Logout</button>
+
 <div id="device"></div>
 <div id="speed"></div>
 <div id="address"></div>
@@ -120,8 +133,8 @@ margin-bottom:8px;
 
 <script>
 
-const PASSWORD = "${2486}"
-const SESSION_TIME = ${30}
+const PASSWORD = "${PASSWORD}"
+const SESSION_TIME = ${SESSION_TIME}
 
 function login(){
 
@@ -199,6 +212,7 @@ window.saveName=function(){
 
 name=document.getElementById("nameInput").value
 localStorage.setItem("device_name",name)
+
 document.getElementById("device").innerText="Gerät: "+name
 
 }
@@ -238,7 +252,6 @@ const dev=devices[d]
 const status=getStatus(dev.time)
 
 const div=document.createElement("div")
-
 div.className="device"
 
 div.innerHTML=
@@ -264,9 +277,7 @@ window.removeDevice=function(id){
 fetch("/remove",{
 
 method:"POST",
-
 headers:{"Content-Type":"application/json"},
-
 body:JSON.stringify({id})
 
 })
@@ -323,7 +334,7 @@ function(pos){
 const lat=pos.coords.latitude
 const lon=pos.coords.longitude
 
-let speed=pos.coords.speed || 0
+let speed=pos.coords.speed||0
 speed=speed*3.6
 
 document.getElementById("speed").innerText=
@@ -421,4 +432,3 @@ const PORT = process.env.PORT || 3000
 server.listen(PORT,()=>{
 console.log("Server läuft auf Port "+PORT)
 })
-
