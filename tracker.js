@@ -48,8 +48,9 @@ height:100vh;
 
 .device{
 background:white;
-padding:6px;
-margin-bottom:6px;
+padding:8px;
+margin-bottom:8px;
+border-radius:4px;
 }
 
 .online{
@@ -60,6 +61,11 @@ font-weight:bold;
 .offline{
 color:red;
 font-weight:bold;
+}
+
+button{
+margin-top:4px;
+cursor:pointer;
 }
 
 </style>
@@ -102,16 +108,15 @@ localStorage.setItem("device_id",id)
 
 let name = localStorage.getItem("device_name") || "Unbekannt"
 
-document.getElementById("device").innerText =
-"Gerät: "+name
+document.getElementById("device").innerText = "Gerät: "+name
 
 function saveName(){
 
-name=document.getElementById("nameInput").value
+name = document.getElementById("nameInput").value
+
 localStorage.setItem("device_name",name)
 
-document.getElementById("device").innerText=
-"Gerät: "+name
+document.getElementById("device").innerText = "Gerät: "+name
 
 }
 
@@ -125,16 +130,17 @@ let markers = {}
 
 function formatTime(t){
 
-const d=new Date(t)
+const d = new Date(t)
+
 return d.toLocaleTimeString()
 
 }
 
 function getStatus(time){
 
-const now=Date.now()
+const now = Date.now()
 
-if(now-time>600000){
+if(now - time > 600000){
 return "offline"
 }
 
@@ -144,26 +150,33 @@ return "online"
 
 function updateDeviceList(devices){
 
-const list=document.getElementById("deviceList")
+const list = document.getElementById("deviceList")
 
-list.innerHTML=""
+list.innerHTML = ""
 
 for(const d in devices){
 
-const dev=devices[d]
+const dev = devices[d]
 
-const status=getStatus(dev.time)
+const status = getStatus(dev.time)
 
-const div=document.createElement("div")
+const div = document.createElement("div")
 
 div.className="device"
 
-div.innerHTML=
+div.innerHTML =
 "<b>"+dev.name+"</b><br>"+
 dev.speed.toFixed(1)+" km/h<br>"+
 "Zuletzt: "+formatTime(dev.time)+"<br>"+
-"Status: <span class='"+status+"'>"+status+"</span><br>"+
-'<button onclick="removeDevice("'+d+'")">❌ Entfernen</button>'
+"Status: <span class='"+status+"'>"+status+"</span><br>"
+
+const btn = document.createElement("button")
+btn.innerText = "❌ Entfernen"
+btn.onclick = function(){
+removeDevice(d)
+}
+
+div.appendChild(btn)
 
 list.appendChild(div)
 
@@ -172,6 +185,10 @@ list.appendChild(div)
 }
 
 function removeDevice(id){
+
+if(!confirm("Gerät wirklich löschen?")){
+return
+}
 
 fetch("/remove",{
 
@@ -193,11 +210,11 @@ updateDeviceList(devices)
 
 for(const d in devices){
 
-const dev=devices[d]
+const dev = devices[d]
 
-const status=getStatus(dev.time)
+const status = getStatus(dev.time)
 
-const popup=
+const popup =
 "<b>"+dev.name+"</b><br>"+
 dev.speed.toFixed(1)+" km/h<br>"+
 "Zuletzt: "+formatTime(dev.time)+"<br>"+
@@ -205,7 +222,7 @@ dev.speed.toFixed(1)+" km/h<br>"+
 
 if(!markers[d]){
 
-markers[d]=L.marker([dev.lat,dev.lon])
+markers[d] = L.marker([dev.lat,dev.lon])
 .addTo(map)
 .bindPopup(popup)
 
@@ -222,9 +239,9 @@ markers[d].setPopupContent(popup)
 
 function updateTime(){
 
-const now=new Date()
+const now = new Date()
 
-document.getElementById("lastUpdate").innerText=
+document.getElementById("lastUpdate").innerText =
 "Aktualisiert um: "+now.toLocaleTimeString()
 
 }
@@ -241,18 +258,18 @@ navigator.geolocation.getCurrentPosition(
 
 function(pos){
 
-const lat=pos.coords.latitude
-const lon=pos.coords.longitude
+const lat = pos.coords.latitude
+const lon = pos.coords.longitude
 
-let speed=pos.coords.speed
+let speed = pos.coords.speed
 
-if(speed===null){
-speed=0
+if(speed === null){
+speed = 0
 }
 
-speed=speed*3.6
+speed = speed * 3.6
 
-document.getElementById("speed").innerText=
+document.getElementById("speed").innerText =
 "Geschwindigkeit: "+speed.toFixed(1)+" km/h"
 
 fetch(
@@ -263,7 +280,7 @@ fetch(
 
 if(data.display_name){
 
-document.getElementById("address").innerText=
+document.getElementById("address").innerText =
 "Adresse: "+data.display_name
 
 }
@@ -293,7 +310,9 @@ updateTime()
 },
 
 function(error){
+
 console.log(error)
+
 },
 
 {
@@ -335,9 +354,9 @@ timeout:10000
 
 app.post("/location",(req,res)=>{
 
-const {id,lat,lon,name,speed}=req.body
+const {id,lat,lon,name,speed} = req.body
 
-devices[id]={
+devices[id] = {
 lat,
 lon,
 name,
@@ -353,7 +372,7 @@ res.sendStatus(200)
 
 app.post("/remove",(req,res)=>{
 
-const {id}=req.body
+const {id} = req.body
 
 delete devices[id]
 
