@@ -8,7 +8,7 @@ const io = new Server(server)
 
 app.use(express.json())
 
-const PASSWORD = "12345" // Passwort hier ändern
+const PASSWORD = "2486" // Passwort hier ändern
 const SESSION_TIME = 30 * 60 * 1000 // 30 Minuten
 
 let devices = {}
@@ -421,3 +421,4 @@ const PORT = process.env.PORT || 3000
 server.listen(PORT,()=>{
 console.log("Server läuft auf Port "+PORT)
 })
+
