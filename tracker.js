@@ -119,10 +119,12 @@ list.innerHTML=""
 
 for(const d in devices){
 
+const dev = devices[d]
+
 const div = document.createElement("div")
 
 div.innerHTML =
-d + ' <button onclick="removeDevice(\\''+d+'\\')">❌</button>'
+dev.name + ' <button onclick="removeDevice(\\''+d+'\\')">❌</button>'
 
 list.appendChild(div)
 
@@ -132,13 +134,17 @@ list.appendChild(div)
 
 function removeDevice(id){
 
-if(markers[id]){
+fetch("/remove",{
 
-map.removeLayer(markers[id])
+method:"POST",
 
-delete markers[id]
+headers:{
+"Content-Type":"application/json"
+},
 
-}
+body:JSON.stringify({id})
+
+})
 
 }
 
@@ -154,11 +160,14 @@ if(!markers[d]){
 
 markers[d] = L.marker([dev.lat,dev.lon])
 .addTo(map)
-.bindPopup(d)
+.bindPopup(dev.name)
 
 }else{
 
 markers[d].setLatLng([dev.lat,dev.lon])
+markers[d].setPopupContent(
+dev.name + "<br>" + dev.speed.toFixed(1) + " km/h"
+)
 
 }
 
@@ -266,6 +275,18 @@ name,
 speed,
 time:Date.now()
 }
+
+io.emit("update",devices)
+
+res.sendStatus(200)
+
+})
+
+app.post("/remove",(req,res)=>{
+
+const {id} = req.body
+
+delete devices[id]
 
 io.emit("update",devices)
 
