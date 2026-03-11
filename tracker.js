@@ -8,6 +8,9 @@ const io = new Server(server)
 
 app.use(express.json())
 
+const PASSWORD = "12345" // Passwort hier ändern
+const SESSION_TIME = 30 * 60 * 1000 // 30 Minuten
+
 let devices = {}
 
 app.get("/", (req,res)=>{
@@ -31,7 +34,23 @@ href="https://unpkg.com/leaflet/dist/leaflet.css"/>
 body{
 margin:0;
 font-family:sans-serif;
+}
+
+#login{
+position:absolute;
+width:100%;
+height:100%;
 display:flex;
+justify-content:center;
+align-items:center;
+flex-direction:column;
+background:#f2f2f2;
+}
+
+#app{
+display:none;
+width:100%;
+height:100%;
 }
 
 #panel{
@@ -39,10 +58,12 @@ width:320px;
 background:#f2f2f2;
 padding:10px;
 overflow:auto;
+float:left;
+height:100vh;
 }
 
 #map{
-flex:1;
+margin-left:320px;
 height:100vh;
 }
 
@@ -50,29 +71,29 @@ height:100vh;
 background:white;
 padding:8px;
 margin-bottom:8px;
-border-radius:4px;
 }
 
-.online{
-color:green;
-font-weight:bold;
-}
-
-.offline{
-color:red;
-font-weight:bold;
-}
-
-button{
-margin-top:4px;
-cursor:pointer;
-}
+.online{color:green;font-weight:bold}
+.offline{color:red;font-weight:bold}
 
 </style>
 
 </head>
 
 <body>
+
+<div id="login">
+
+<h2>Login</h2>
+
+<input id="passwordInput" type="password" placeholder="Passwort"/>
+<button onclick="login()">Login</button>
+
+<div id="loginError" style="color:red"></div>
+
+</div>
+
+<div id="app">
 
 <div id="panel">
 
@@ -95,28 +116,90 @@ cursor:pointer;
 
 <div id="map"></div>
 
+</div>
+
 <script>
+
+const PASSWORD = "${2486}"
+const SESSION_TIME = ${30}
+
+function login(){
+
+const pw=document.getElementById("passwordInput").value
+
+if(pw===PASSWORD){
+
+localStorage.setItem("loginTime",Date.now())
+
+startApp()
+
+}else{
+
+document.getElementById("loginError").innerText="Falsches Passwort"
+
+}
+
+}
+
+function checkSession(){
+
+const t=localStorage.getItem("loginTime")
+
+if(!t){
+return false
+}
+
+if(Date.now()-t>SESSION_TIME){
+
+localStorage.removeItem("loginTime")
+return false
+
+}
+
+return true
+
+}
+
+function startApp(){
+
+document.getElementById("login").style.display="none"
+document.getElementById("app").style.display="block"
+
+initTracker()
+
+}
+
+if(checkSession()){
+startApp()
+}
+
+function logout(){
+
+localStorage.removeItem("loginTime")
+location.reload()
+
+}
+
+function initTracker(){
 
 const socket = io()
 
 let id = localStorage.getItem("device_id")
 
 if(!id){
-id = "device-"+Math.random().toString(36).substr(2,9)
+id="device-"+Math.random().toString(36).substr(2,9)
 localStorage.setItem("device_id",id)
 }
 
 let name = localStorage.getItem("device_name") || "Unbekannt"
 
-document.getElementById("device").innerText = "Gerät: "+name
+document.getElementById("device").innerText="Gerät: "+name
 
-function saveName(){
+window.saveName=function(){
 
-name = document.getElementById("nameInput").value
-
+name=document.getElementById("nameInput").value
 localStorage.setItem("device_name",name)
-
-document.getElementById("device").innerText = "Gerät: "+name
+document.getElementById("device").innerText="Gerät: "+name
 
 }
 
@@ -126,21 +209,15 @@ L.tileLayer(
 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png'
 ).addTo(map)
 
-let markers = {}
+let markers={}
 
 function formatTime(t){
-
-const d = new Date(t)
-
-return d.toLocaleTimeString()
-
+return new Date(t).toLocaleTimeString()
 }
 
-function getStatus(time){
+function getStatus(t){
 
-const now = Date.now()
-
-if(now - time > 600000){
+if(Date.now()-t>600000){
 return "offline"
 }
 
@@ -150,31 +227,29 @@ return "online"
 
 function updateDeviceList(devices){
 
-const list = document.getElementById("deviceList")
+const list=document.getElementById("deviceList")
 
-list.innerHTML = ""
+list.innerHTML=""
 
 for(const d in devices){
 
-const dev = devices[d]
+const dev=devices[d]
 
-const status = getStatus(dev.time)
+const status=getStatus(dev.time)
 
-const div = document.createElement("div")
+const div=document.createElement("div")
 
 div.className="device"
 
-div.innerHTML =
+div.innerHTML=
 "<b>"+dev.name+"</b><br>"+
 dev.speed.toFixed(1)+" km/h<br>"+
 "Zuletzt: "+formatTime(dev.time)+"<br>"+
-"Status: <span class='"+status+"'>"+status+"</span><br>"
+"Status: <span class='"+status+"'>"+status+"</span>"
 
-const btn = document.createElement("button")
-btn.innerText = "❌ Entfernen"
-btn.onclick = function(){
-removeDevice(d)
-}
+const btn=document.createElement("button")
+btn.innerText="❌ Entfernen"
+btn.onclick=function(){removeDevice(d)}
 
 div.appendChild(btn)
 
@@ -184,19 +259,13 @@ list.appendChild(div)
 
 }
 
-function removeDevice(id){
-
-if(!confirm("Gerät wirklich löschen?")){
-return
-}
+window.removeDevice=function(id){
 
 fetch("/remove",{
 
 method:"POST",
 
-headers:{
-"Content-Type":"application/json"
-},
+headers:{"Content-Type":"application/json"},
 
 body:JSON.stringify({id})
 
@@ -210,19 +279,16 @@ updateDeviceList(devices)
 
 for(const d in devices){
 
-const dev = devices[d]
+const dev=devices[d]
 
-const status = getStatus(dev.time)
-
-const popup =
+const popup=
 "<b>"+dev.name+"</b><br>"+
 dev.speed.toFixed(1)+" km/h<br>"+
-"Zuletzt: "+formatTime(dev.time)+"<br>"+
-"Status: "+status
+"Zuletzt: "+formatTime(dev.time)
 
 if(!markers[d]){
 
-markers[d] = L.marker([dev.lat,dev.lon])
+markers[d]=L.marker([dev.lat,dev.lon])
 .addTo(map)
 .bindPopup(popup)
 
@@ -237,18 +303,14 @@ markers[d].setPopupContent(popup)
 
 })
 
-function updateTime(){
-
-const now = new Date()
-
-document.getElementById("lastUpdate").innerText =
-"Aktualisiert um: "+now.toLocaleTimeString()
-
+window.manualUpdate=function(){
+getLocation()
 }
 
-function manualUpdate(){
+function updateTime(){
 
-getLocation()
+document.getElementById("lastUpdate").innerText=
+"Aktualisiert um: "+new Date().toLocaleTimeString()
 
 }
 
@@ -258,31 +320,23 @@ navigator.geolocation.getCurrentPosition(
 
 function(pos){
 
-const lat = pos.coords.latitude
-const lon = pos.coords.longitude
+const lat=pos.coords.latitude
+const lon=pos.coords.longitude
 
-let speed = pos.coords.speed
+let speed=pos.coords.speed || 0
+speed=speed*3.6
 
-if(speed === null){
-speed = 0
-}
-
-speed = speed * 3.6
-
-document.getElementById("speed").innerText =
+document.getElementById("speed").innerText=
 "Geschwindigkeit: "+speed.toFixed(1)+" km/h"
 
 fetch(
 "https://nominatim.openstreetmap.org/reverse?format=json&lat="+lat+"&lon="+lon
 )
-.then(res=>res.json())
+.then(r=>r.json())
 .then(data=>{
 
 if(data.display_name){
-
-document.getElementById("address").innerText =
-"Adresse: "+data.display_name
-
+document.getElementById("address").innerText="Adresse: "+data.display_name
 }
 
 })
@@ -291,9 +345,7 @@ fetch("/location",{
 
 method:"POST",
 
-headers:{
-"Content-Type":"application/json"
-},
+headers:{"Content-Type":"application/json"},
 
 body:JSON.stringify({
 id,
@@ -309,10 +361,8 @@ updateTime()
 
 },
 
-function(error){
-
-console.log(error)
-
+function(err){
+console.log(err)
 },
 
 {
@@ -325,23 +375,9 @@ timeout:10000
 
 }
 
-navigator.geolocation.watchPosition(
+navigator.geolocation.watchPosition(()=>{getLocation()})
 
-function(){
-getLocation()
-},
-
-function(e){
-console.log(e)
-},
-
-{
-enableHighAccuracy:false,
-maximumAge:60000,
-timeout:10000
 }
-
-)
 
 </script>
 
@@ -354,15 +390,9 @@ timeout:10000
 
 app.post("/location",(req,res)=>{
 
-const {id,lat,lon,name,speed} = req.body
+const {id,lat,lon,name,speed}=req.body
 
-devices[id] = {
-lat,
-lon,
-name,
-speed,
-time:Date.now()
-}
+devices[id]={lat,lon,name,speed,time:Date.now()}
 
 io.emit("update",devices)
 
@@ -372,7 +402,7 @@ res.sendStatus(200)
 
 app.post("/remove",(req,res)=>{
 
-const {id} = req.body
+const {id}=req.body
 
 delete devices[id]
 
