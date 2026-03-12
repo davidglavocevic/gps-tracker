@@ -388,6 +388,38 @@ timeout:10000
 
 navigator.geolocation.watchPosition(()=>{getLocation()})
 
+/* Standort alle 10 Sekunden senden */
+setInterval(()=>{
+getLocation()
+},10000)
+
+/* App alle 15 Sekunden synchronisieren */
+setInterval(()=>{
+fetch("/location-check")
+},15000)
+
+/* Inaktivität überwachen */
+
+let lastActivity = Date.now()
+
+function resetActivity(){
+lastActivity = Date.now()
+}
+
+document.addEventListener("click",resetActivity)
+document.addEventListener("touchstart",resetActivity)
+document.addEventListener("keydown",resetActivity)
+
+/* Neustart nach 13 Minuten */
+
+setInterval(()=>{
+
+if(Date.now() - lastActivity > 13 * 60 * 1000){
+location.reload()
+}
+
+},30000)
+
 }
 
 </script>
@@ -421,6 +453,11 @@ io.emit("update",devices)
 
 res.sendStatus(200)
 
+})
+
+app.get("/location-check",(req,res)=>{
+io.emit("update",devices)
+res.sendStatus(200)
 })
 
 io.on("connection",(socket)=>{
