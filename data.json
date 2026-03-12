@@ -1,0 +1,39 @@
+{
+  "whatsapp": "49123456789",
+
+  "locations": [
+    "Wiesbaden",
+    "Mainz",
+    "Frankfurt",
+    "Rüsselsheim",
+    "Darmstadt"
+  ],
+
+  "services": [
+
+    {
+      "name": "Innenraumreinigung Basic",
+      "description": "Staubsaugen und Reinigung des Innenraums mit Nass-Trockensauger.",
+      "price": "ab 60€"
+    },
+
+    {
+      "name": "Innenraumreinigung Premium",
+      "description": "Tiefenreinigung mit Nass-Trockensauger inklusive Kunststoffpflege.",
+      "price": "ab 90€"
+    },
+
+    {
+      "name": "Innenraum + Lederpflege",
+      "description": "Innenraumreinigung mit Lederpflege und Kunststoffaufbereitung.",
+      "price": "ab 110€"
+    },
+
+    {
+      "name": "Möbelreinigung",
+      "description": "Polster- und Sofa Reinigung vor Ort mit Nasssauger.",
+      "price": "ab 50€"
+    }
+
+  ]
+}
