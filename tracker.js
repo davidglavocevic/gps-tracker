@@ -94,8 +94,6 @@ cursor:pointer;
 
 <input id="passwordInput"
 type="password"
-name="password"
-autocomplete="current-password"
 placeholder="Passwort"/>
 
 <button onclick="login()">Login</button>
@@ -143,7 +141,6 @@ const pw=document.getElementById("passwordInput").value
 if(pw===PASSWORD){
 
 localStorage.setItem("loginTime",Date.now())
-
 startApp()
 
 }else{
@@ -158,9 +155,7 @@ function checkSession(){
 
 const t=localStorage.getItem("loginTime")
 
-if(!t){
-return false
-}
+if(!t) return false
 
 if(Date.now()-t>SESSION_TIME){
 
@@ -182,9 +177,7 @@ initTracker()
 
 }
 
-if(checkSession()){
-startApp()
-}
+if(checkSession()) startApp()
 
 function logout(){
 
@@ -212,7 +205,6 @@ window.saveName=function(){
 
 name=document.getElementById("nameInput").value
 localStorage.setItem("device_name",name)
-
 document.getElementById("device").innerText="Gerät: "+name
 
 }
@@ -231,10 +223,7 @@ return new Date(t).toLocaleTimeString()
 
 function getStatus(t){
 
-if(Date.now()-t>600000){
-return "offline"
-}
-
+if(Date.now()-t>600000) return "offline"
 return "online"
 
 }
@@ -242,13 +231,11 @@ return "online"
 function updateDeviceList(devices){
 
 const list=document.getElementById("deviceList")
-
 list.innerHTML=""
 
 for(const d in devices){
 
 const dev=devices[d]
-
 const status=getStatus(dev.time)
 
 const div=document.createElement("div")
@@ -265,7 +252,6 @@ btn.innerText="❌ Entfernen"
 btn.onclick=function(){removeDevice(d)}
 
 div.appendChild(btn)
-
 list.appendChild(div)
 
 }
@@ -294,7 +280,7 @@ const dev=devices[d]
 
 const popup=
 "<b>"+dev.name+"</b><br>"+
-dev.speed.toFixed(1)+" km/h<br>"+
+"Geschwindigkeit: "+dev.speed.toFixed(1)+" km/h<br>"+
 "Zuletzt: "+formatTime(dev.time)
 
 if(!markers[d]){
@@ -302,11 +288,17 @@ if(!markers[d]){
 markers[d]=L.marker([dev.lat,dev.lon])
 .addTo(map)
 .bindPopup(popup)
+.bindTooltip(dev.name,{
+permanent:true,
+direction:"top",
+offset:[0,-10]
+})
 
 }else{
 
 markers[d].setLatLng([dev.lat,dev.lon])
 markers[d].setPopupContent(popup)
+markers[d].setTooltipContent(dev.name)
 
 }
 
@@ -340,18 +332,6 @@ speed=speed*3.6
 document.getElementById("speed").innerText=
 "Geschwindigkeit: "+speed.toFixed(1)+" km/h"
 
-fetch(
-"https://nominatim.openstreetmap.org/reverse?format=json&lat="+lat+"&lon="+lon
-)
-.then(r=>r.json())
-.then(data=>{
-
-if(data.display_name){
-document.getElementById("address").innerText="Adresse: "+data.display_name
-}
-
-})
-
 fetch("/location",{
 
 method:"POST",
@@ -370,16 +350,6 @@ speed
 
 updateTime()
 
-},
-
-function(err){
-console.log(err)
-},
-
-{
-enableHighAccuracy:false,
-maximumAge:60000,
-timeout:10000
 }
 
 )
@@ -388,17 +358,9 @@ timeout:10000
 
 navigator.geolocation.watchPosition(()=>{getLocation()})
 
-/* Standort alle 10 Sekunden senden */
-setInterval(()=>{
-getLocation()
-},10000)
+setInterval(()=>{getLocation()},10000)
 
-/* App alle 15 Sekunden synchronisieren */
-setInterval(()=>{
-fetch("/location-check")
-},15000)
-
-/* Inaktivität überwachen */
+setInterval(()=>{fetch("/location-check")},15000)
 
 let lastActivity = Date.now()
 
@@ -409,8 +371,6 @@ lastActivity = Date.now()
 document.addEventListener("click",resetActivity)
 document.addEventListener("touchstart",resetActivity)
 document.addEventListener("keydown",resetActivity)
-
-/* Neustart nach 13 Minuten */
 
 setInterval(()=>{
 
